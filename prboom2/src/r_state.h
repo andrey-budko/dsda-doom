@@ -68,6 +68,7 @@ extern vertex_t         *vertexes;
 
 extern int              numsegs;
 extern seg_t            *segs;
+extern seg_data_t       *segs_data;
 
 extern int              numsectors;
 extern sector_t         *sectors;

@@ -390,16 +390,8 @@ typedef struct msecnode_s
 typedef struct
 {
   vertex_t *v1, *v2;
-  fixed_t offset;
-  angle_t angle;
-  angle_t pangle; // re-calculated angle used for rendering
-  int64_t length; // fix long wall wobble
   side_t* sidedef;
   line_t* linedef;
-
-  // figgi -- needed for glnodes
-  dboolean   miniseg;
-
 
   // Sector references.
   // Could be retrieved from linedef, too
@@ -408,6 +400,14 @@ typedef struct
 
   sector_t *frontsector, *backsector;
 } seg_t;
+
+typedef struct
+{
+  int64_t length; // fix long wall wobble
+  angle_t pangle; // re-calculated angle used for rendering
+  angle_t angle;
+  fixed_t offset;
+} seg_data_t;
 
 typedef struct ssline_s
 {

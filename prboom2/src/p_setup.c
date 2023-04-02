@@ -88,6 +88,7 @@ vertex_t *vertexes;
 
 int      numsegs;
 seg_t    *segs;
+seg_data_t *segs_data;
 
 int      numsectors;
 sector_t *sectors;
@@ -533,6 +534,7 @@ static void P_LoadSegs (int lump)
 
   numsegs = W_LumpLength(lump) / sizeof(mapseg_t);
   segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t));
+  segs_data = calloc_IfSameLevel(segs_data, numsegs, sizeof(seg_data_t));
   data = (const mapseg_t *)W_LumpByNum(lump); // cph - wad lump handling updated
 
   if ((!data) || (!numsegs))
@@ -557,13 +559,11 @@ static void P_LoadSegs (int lump)
       //li->v1 = &vertexes[v1];
       //li->v2 = &vertexes[v2];
 
-      li->miniseg = false; // figgi -- there are no minisegs in classic BSP nodes
-
       // e6y: moved down, see below
       //li->length  = GetDistance(li->v2->x - li->v1->x, li->v2->y - li->v1->y);
 
-      li->angle = (LittleShort(ml->angle))<<16;
-      li->offset =(LittleShort(ml->offset))<<16;
+      segs_data[li - segs].angle = (LittleShort(ml->angle))<<16;
+      segs_data[li - segs].offset =(LittleShort(ml->offset))<<16;
       linedef = (unsigned short)LittleShort(ml->linedef);
 
       //e6y: check for wrong indexes
@@ -662,7 +662,7 @@ static void P_LoadSegs (int lump)
       // Recalculate seg offsets that are sometimes incorrect
       // with certain nodebuilders. Fixes among others, line 20365
       // of DV.wad, map 5
-      li->offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
+      segs_data[li - segs].offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
     }
 }
 
@@ -673,6 +673,7 @@ static void P_LoadSegs_V4(int lump)
 
   numsegs = W_LumpLength(lump) / sizeof(mapseg_v4_t);
   segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t));
+  segs_data = calloc_IfSameLevel(segs_data, numsegs, sizeof(seg_data_t));
   data = (const mapseg_v4_t *)W_LumpByNum(lump);
 
   if ((!data) || (!numsegs))
@@ -691,10 +692,8 @@ static void P_LoadSegs_V4(int lump)
     v1 = LittleLong(ml->v1);
     v2 = LittleLong(ml->v2);
 
-    li->miniseg = false; // figgi -- there are no minisegs in classic BSP nodes
-
-    li->angle = (LittleShort(ml->angle))<<16;
-    li->offset =(LittleShort(ml->offset))<<16;
+    segs_data[li - segs].angle = (LittleShort(ml->angle))<<16;
+    segs_data[li - segs].offset =(LittleShort(ml->offset))<<16;
     linedef = (unsigned short)LittleShort(ml->linedef);
 
     //e6y: check for wrong indexes
@@ -782,7 +781,7 @@ static void P_LoadSegs_V4(int lump)
     // Recalculate seg offsets that are sometimes incorrect
     // with certain nodebuilders. Fixes among others, line 20365
     // of DV.wad, map 5
-    li->offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
+    segs_data[li - segs].offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
   }
 }
 
@@ -817,8 +816,7 @@ static void P_LoadGLSegs(int lump)
     {
       ldef = &lines[ml->linedef];
       segs[i].linedef = ldef;
-      segs[i].miniseg = false;
-      segs[i].angle = R_PointToAngle2(segs[i].v1->x,segs[i].v1->y,segs[i].v2->x,segs[i].v2->y);
+      segs_data[i].angle = R_PointToAngle2(segs[i].v1->x,segs[i].v1->y,segs[i].v2->x,segs[i].v2->y);
 
       segs[i].sidedef = &sides[ldef->sidenum[ml->side]];
       segs[i].frontsector = sides[ldef->sidenum[ml->side]].sector;
@@ -828,15 +826,14 @@ static void P_LoadGLSegs(int lump)
         segs[i].backsector = 0;
 
       if (ml->side)
-        segs[i].offset = GetOffset(segs[i].v1, ldef->v2);
+        segs_data[i].offset = GetOffset(segs[i].v1, ldef->v2);
       else
-        segs[i].offset = GetOffset(segs[i].v1, ldef->v1);
+        segs_data[i].offset = GetOffset(segs[i].v1, ldef->v1);
     }
     else
     {
-      segs[i].miniseg = true;
-      segs[i].angle  = 0;
-      segs[i].offset  = 0;
+      segs_data[i].angle  = 0;
+      segs_data[i].offset  = 0;
       segs[i].linedef = NULL;
       segs[i].sidedef = NULL;
       segs[i].frontsector = NULL;
@@ -1250,8 +1247,6 @@ static void P_LoadZSegs (const byte *data)
     v1 = LittleLong(ml->v1);
     v2 = LittleLong(ml->v2);
 
-    li->miniseg = false;
-
     linedef = (unsigned short)LittleShort(ml->linedef);
 
     //e6y: check for wrong indexes
@@ -1302,8 +1297,8 @@ static void P_LoadZSegs (const byte *data)
     li->v1 = &vertexes[v1];
     li->v2 = &vertexes[v2];
 
-    li->offset = GetOffset(li->v1, (side ? ldef->v2 : ldef->v1));
-    li->angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
+    segs_data[li - segs].offset = GetOffset(li->v1, (side ? ldef->v2 : ldef->v1));
+    segs_data[li - segs].angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
     //li->angle = (int)((float)atan2(li->v2->y - li->v1->y,li->v2->x - li->v1->x) * (ANG180 / M_PI));
   }
 }
@@ -1362,8 +1357,6 @@ static void P_LoadGLZSegs(const byte *data, int type)
       {
         line_t *ldef;
 
-        seg->miniseg = false;
-
         if ((unsigned int) line >= (unsigned int) numlines)
         {
           I_Error("P_LoadGLZSegs: seg %d, %d references a non-existent linedef %d",
@@ -1405,13 +1398,12 @@ static void P_LoadGLZSegs(const byte *data, int type)
         else
           seg->backsector = 0;
 
-        seg->offset = GetOffset(seg->v1, (side ? ldef->v2 : ldef->v1));
+        segs_data[seg - segs].offset = GetOffset(seg->v1, (side ? ldef->v2 : ldef->v1));
       }
       else
       {
-        seg->miniseg = true;
-        seg->angle = 0;
-        seg->offset = 0;
+        segs_data[seg - segs].angle = 0;
+        segs_data[seg - segs].offset = 0;
         seg->linedef = NULL;
         seg->sidedef = NULL;
         seg->frontsector = segs[subsectors[i].firstline].frontsector;
@@ -1426,8 +1418,8 @@ static void P_LoadGLZSegs(const byte *data, int type)
 
       seg = &segs[subsectors[i].firstline + j];
 
-      if (!seg->miniseg)
-        seg->angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
+      if (seg->linedef)
+        segs_data[seg - segs].angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
     }
   }
 }
@@ -1555,6 +1547,7 @@ static void P_LoadZNodes(int lump, int glnodes)
 
   numsegs = numSegs;
   segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t));
+  segs_data = calloc_IfSameLevel(segs_data, numsegs, sizeof(seg_data_t));
 
   if (glnodes == 0)
   {
@@ -3265,7 +3258,7 @@ static void P_RemoveSlimeTrails(void)         // killough 10/98
   {
     const line_t *l;
 
-    if (segs[i].miniseg == true)        //figgi -- skip minisegs
+    if (!segs[i].linedef)
       break;                            //e6y: probably 'continue;'?
 
     l = segs[i].linedef;            // The parent linedef
@@ -3318,9 +3311,9 @@ static void R_CalcSegsLength(void)
     int64_t dx = (int64_t)li->v2->px - li->v1->px;
     int64_t dy = (int64_t)li->v2->py - li->v1->py;
     length = sqrt((double)dx*dx + (double)dy*dy);
-    li->length = (int64_t)length;
+    segs_data[i].length = (int64_t)length;
     // [crispy] re-calculate angle used for rendering
-    li->pangle = R_PointToAngleEx2(li->v1->px, li->v1->py, li->v2->px, li->v2->py);
+    segs_data[i].pangle = R_PointToAngleEx2(li->v1->px, li->v1->py, li->v2->px, li->v2->py);
   }
 }
 
@@ -3767,6 +3760,7 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     gld_CleanMemory();
 
     Z_Free(segs);
+    Z_Free(segs_data);
     Z_Free(nodes);
     Z_Free(subsectors);
     Z_Free(map_subsectors);
