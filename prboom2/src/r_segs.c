@@ -686,7 +686,7 @@ void R_StoreWallRange(const int start, const int stop)
     maxdrawsegs = newmax;
   }
 
-  if(curline->miniseg == false) // figgi -- skip minisegs
+  if(curline->linedef)
     curline->linedef->flags |= ML_MAPPED;
 
   if (V_IsOpenGLMode())
@@ -710,7 +710,7 @@ void R_StoreWallRange(const int start, const int stop)
   linedef->flags |= ML_MAPPED;
 
   // calculate rw_distance for scale calculation
-  rw_normalangle = curline->pangle + ANG90; // [crispy] use re-calculated angle
+  rw_normalangle = curline->data->pangle + ANG90; // [crispy] use re-calculated angle
 
   // [Linguica] Fix long wall error
   // shift right to avoid possibility of int64 overflow in rw_distance calculation
@@ -718,7 +718,7 @@ void R_StoreWallRange(const int start, const int stop)
   dy = ((int64_t)curline->v2->py - curline->v1->py) >> shift_bits;
   dx1 = ((int64_t)viewx - curline->v1->px) >> shift_bits;
   dy1 = ((int64_t)viewy - curline->v1->py) >> shift_bits;
-  len = curline->length >> shift_bits;
+  len = curline->data->length >> shift_bits;
 
   dist = (((dy * dx1 - dx * dy1) / len) << shift_bits);
   rw_distance = (fixed_t)BETWEEN(INT_MIN, INT_MAX, dist);
@@ -926,7 +926,7 @@ void R_StoreWallRange(const int start, const int stop)
   {
     rw_offset = (fixed_t)(((dx * dx1 + dy * dy1) / len) << shift_bits);
 
-    rw_offset += sidedef->textureoffset + curline->offset;
+    rw_offset += sidedef->textureoffset + curline->data->offset;
 
     rw_centerangle = ANG90 + viewangle - rw_normalangle;
 

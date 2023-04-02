@@ -65,7 +65,7 @@ static void ResetSegDrawingParameters(seg_t *seg)
   seg->v1->py = seg->v1->y;
   seg->v2->px = seg->v2->x;
   seg->v2->py = seg->v2->y;
-  seg->pangle = seg->angle;
+  seg->data->pangle = seg->data->angle;
 }
 
 void ResetPolySubSector(polyobj_t *po)
@@ -637,7 +637,7 @@ static void ThrustMobj(mobj_t * mobj, seg_t * seg, polyobj_t * po)
     {
         return;
     }
-    thrustAngle = (seg->angle - ANG90) >> ANGLETOFINESHIFT;
+    thrustAngle = (seg->data->angle - ANG90) >> ANGLETOFINESHIFT;
 
     pe = po->specialdata;
     if (pe)
@@ -890,7 +890,7 @@ dboolean PO_RotatePolyobj(int num, angle_t angle)
             UpdateSegBBox(*segList);
             (*segList)->linedef->validcount = validcount;
         }
-        (*segList)->angle += angle;
+        (*segList)->data->angle += angle;
     }
     if (blocked)
     {
@@ -910,7 +910,7 @@ dboolean PO_RotatePolyobj(int num, angle_t angle)
                 UpdateSegBBox(*segList);
                 (*segList)->linedef->validcount = validcount;
             }
-            (*segList)->angle -= angle;
+            (*segList)->data->angle -= angle;
         }
         LinkPolyobj(po);
         return false;

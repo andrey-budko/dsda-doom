@@ -1597,7 +1597,7 @@ void P_ArchivePolyobjs(void)
       P_ArchiveVertex(seg->v1);
       P_ArchiveVertex(seg->v2);
 
-      P_SAVE_X(seg->angle);
+      P_SAVE_X(seg->data->angle);
       P_SAVE_X(line->slopetype);
       P_SAVE_ARRAY(line->bbox);
       P_SAVE_X(line->dx);
@@ -1642,7 +1642,7 @@ void P_UnArchivePolyobjs(void)
       P_UnArchiveVertex(seg->v1);
       P_UnArchiveVertex(seg->v2);
 
-      P_LOAD_X(seg->angle);
+      P_LOAD_X(seg->data->angle);
       P_LOAD_X(line->slopetype);
       P_LOAD_ARRAY(line->bbox);
       P_LOAD_X(line->dx);
