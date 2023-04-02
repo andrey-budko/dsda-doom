@@ -459,12 +459,12 @@ dboolean P_BlockLinesIterator(int x, int y, dboolean func(line_t*))
           tempSeg = polyLink->polyobj->segs;
           for (i = 0; i < polyLink->polyobj->numsegs; i++, tempSeg++)
           {
-            if ((*tempSeg)->linedef->validcount == validcount)
+            if (SEG_LINE(*tempSeg)->validcount == validcount)
             {
               continue;
             }
-            (*tempSeg)->linedef->validcount = validcount;
-            if (!func((*tempSeg)->linedef))
+            SEG_LINE(*tempSeg)->validcount = validcount;
+            if (!func(SEG_LINE(*tempSeg)))
             {
               return false;
             }
@@ -536,12 +536,12 @@ dboolean P_BlockLinesIterator2(int x, int y, dboolean func(line_t*))
           tempSeg = polyLink->polyobj->segs;
           for (i = 0; i < polyLink->polyobj->numsegs; i++, tempSeg++)
           {
-            if ((*tempSeg)->linedef->validcount2 == validcount2)
+            if (SEG_LINE(*tempSeg)->validcount2 == validcount2)
             {
               continue;
             }
-            (*tempSeg)->linedef->validcount2 = validcount2;
-            if (!func((*tempSeg)->linedef))
+            SEG_LINE(*tempSeg)->validcount2 = validcount2;
+            if (!func(SEG_LINE(*tempSeg)))
             {
               return false;
             }

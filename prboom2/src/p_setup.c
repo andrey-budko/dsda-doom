@@ -549,8 +549,6 @@ static void P_LoadSegs (int lump)
       int side, linedef;
       line_t *ldef;
 
-      li->data = segs_data + i;
-
       v1 = (unsigned short)LittleShort(ml->v1);
       v2 = (unsigned short)LittleShort(ml->v2);
 
@@ -564,8 +562,8 @@ static void P_LoadSegs (int lump)
       // e6y: moved down, see below
       //li->length  = GetDistance(li->v2->x - li->v1->x, li->v2->y - li->v1->y);
 
-      li->data->angle = (LittleShort(ml->angle))<<16;
-      li->data->offset =(LittleShort(ml->offset))<<16;
+      segs_data[li - segs].angle = (LittleShort(ml->angle))<<16;
+      segs_data[li - segs].offset =(LittleShort(ml->offset))<<16;
       linedef = (unsigned short)LittleShort(ml->linedef);
 
       //e6y: check for wrong indexes
@@ -576,7 +574,7 @@ static void P_LoadSegs (int lump)
       }
 
       ldef = &lines[linedef];
-      li->linedef = ldef;
+      SEG_SET_LINE(li, ldef);
       side = LittleShort(ml->side);
 
       //e6y: fix wrong side index
@@ -593,15 +591,15 @@ static void P_LoadSegs (int lump)
           linedef, i, (unsigned)ldef->sidenum[side]);
       }
 
-      li->sidedef = &sides[ldef->sidenum[side]];
+      SEG_SET_SIDE(li, &sides[ldef->sidenum[side]]);
 
       /* cph 2006/09/30 - our frontsector can be the second side of the
        * linedef, so must check for NO_INDEX in case we are incorrectly
        * referencing the back of a 1S line */
       if (ldef->sidenum[side] != NO_INDEX)
-        li->frontsector = sides[ldef->sidenum[side]].sector;
+        SEG_SET_FRONT(li, sides[ldef->sidenum[side]].sector);
       else {
-        li->frontsector = 0;
+        SEG_SET_NOFRONT(li);
         lprintf(LO_WARN, "P_LoadSegs: front of seg %i has no sidedef\n", i);
       }
 
@@ -612,16 +610,16 @@ static void P_LoadSegs (int lump)
         if (sidenum == NO_INDEX)
         {
           // this is wrong
-          li->backsector = GetSectorAtNullAddress();
+          SEG_SET_BACK(li, GetSectorAtNullAddress());
         }
         else
         {
-          li->backsector = sides[sidenum].sector;
+          SEG_SET_BACK(li, sides[sidenum].sector);
         }
       }
       else
       {
-        li->backsector = 0;
+        SEG_SET_NOBACK(li);
       }
 
       // e6y
@@ -644,27 +642,27 @@ static void P_LoadSegs (int lump)
         if (v2 >= numvertexes)
           lprintf(LO_WARN, str, i, v2);
 
-        if (li->sidedef == &sides[li->linedef->sidenum[0]])
+        if (SEG_SIDE(li) == &sides[SEG_LINE(li)->sidenum[0]])
         {
-          li->v1 = lines[ml->linedef].v1;
-          li->v2 = lines[ml->linedef].v2;
+          SEG_SET_V1(li, lines[ml->linedef].v1);
+          SEG_SET_V2(li, lines[ml->linedef].v2);
         }
         else
         {
-          li->v1 = lines[ml->linedef].v2;
-          li->v2 = lines[ml->linedef].v1;
+          SEG_SET_V1(li, lines[ml->linedef].v2);
+          SEG_SET_V2(li, lines[ml->linedef].v1);
         }
       }
       else
       {
-        li->v1 = &vertexes[v1];
-        li->v2 = &vertexes[v2];
+        SEG_SET_V1(li, &vertexes[v1]);
+        SEG_SET_V2(li, &vertexes[v2]);
       }
 
       // Recalculate seg offsets that are sometimes incorrect
       // with certain nodebuilders. Fixes among others, line 20365
       // of DV.wad, map 5
-      li->data->offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
+      segs_data[li - segs].offset = GetOffset(SEG_V1(li), (ml->side ? ldef->v2 : ldef->v1));
     }
 }
 
@@ -690,14 +688,12 @@ static void P_LoadSegs_V4(int lump)
     int side, linedef;
     line_t *ldef;
 
-    li->data = segs_data + i;
-
     // MB 2020-04-22: Fix endianess for DeePBSP V4 extended nodes
     v1 = LittleLong(ml->v1);
     v2 = LittleLong(ml->v2);
 
-    li->data->angle = (LittleShort(ml->angle))<<16;
-    li->data->offset =(LittleShort(ml->offset))<<16;
+    segs_data[li - segs].angle = (LittleShort(ml->angle))<<16;
+    segs_data[li - segs].offset =(LittleShort(ml->offset))<<16;
     linedef = (unsigned short)LittleShort(ml->linedef);
 
     //e6y: check for wrong indexes
@@ -708,7 +704,7 @@ static void P_LoadSegs_V4(int lump)
     }
 
     ldef = &lines[linedef];
-    li->linedef = ldef;
+    SEG_SET_LINE(li, ldef);
     side = LittleShort(ml->side);
 
     //e6y: fix wrong side index
@@ -725,25 +721,25 @@ static void P_LoadSegs_V4(int lump)
         linedef, i, (unsigned)ldef->sidenum[side]);
     }
 
-    li->sidedef = &sides[ldef->sidenum[side]];
+    SEG_SET_SIDE(li, &sides[ldef->sidenum[side]]);
 
     /* cph 2006/09/30 - our frontsector can be the second side of the
     * linedef, so must check for NO_INDEX in case we are incorrectly
     * referencing the back of a 1S line */
     if (ldef->sidenum[side] != NO_INDEX)
     {
-      li->frontsector = sides[ldef->sidenum[side]].sector;
+      SEG_SET_FRONT(li, sides[ldef->sidenum[side]].sector);
     }
     else
     {
-      li->frontsector = 0;
+      SEG_SET_NOFRONT(li);
       lprintf(LO_WARN, "P_LoadSegs_V4: front of seg %i has no sidedef\n", i);
     }
 
     if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side^1]!=NO_INDEX)
-      li->backsector = sides[ldef->sidenum[side^1]].sector;
+      SEG_SET_BACK(li, sides[ldef->sidenum[side^1]].sector);
     else
-      li->backsector = 0;
+      SEG_SET_NOBACK(li);
 
     // e6y
     // check and fix wrong references to non-existent vertexes
@@ -765,27 +761,27 @@ static void P_LoadSegs_V4(int lump)
       if (v2 >= numvertexes)
         lprintf(LO_WARN, str, i, v2);
 
-      if (li->sidedef == &sides[li->linedef->sidenum[0]])
+      if (SEG_SIDE(li) == &sides[SEG_LINE(li)->sidenum[0]])
       {
-        li->v1 = lines[ml->linedef].v1;
-        li->v2 = lines[ml->linedef].v2;
+        SEG_SET_V1(li, lines[ml->linedef].v1);
+        SEG_SET_V2(li, lines[ml->linedef].v2);
       }
       else
       {
-        li->v1 = lines[ml->linedef].v2;
-        li->v2 = lines[ml->linedef].v1;
+        SEG_SET_V1(li, lines[ml->linedef].v2);
+        SEG_SET_V2(li, lines[ml->linedef].v1);
       }
     }
     else
     {
-      li->v1 = &vertexes[v1];
-      li->v2 = &vertexes[v2];
+      SEG_SET_V1(li, &vertexes[v1]);
+      SEG_SET_V2(li, &vertexes[v2]);
     }
 
     // Recalculate seg offsets that are sometimes incorrect
     // with certain nodebuilders. Fixes among others, line 20365
     // of DV.wad, map 5
-    li->data->offset = GetOffset(li->v1, (ml->side ? ldef->v2 : ldef->v1));
+    segs_data[li - segs].offset = GetOffset(SEG_V1(li), (ml->side ? ldef->v2 : ldef->v1));
   }
 }
 
@@ -813,35 +809,35 @@ static void P_LoadGLSegs(int lump)
 
   for(i = 0; i < numsegs; i++)
   {             // check for gl-vertices
-    segs[i].v1 = &vertexes[checkGLVertex(LittleShort(ml->v1))];
-    segs[i].v2 = &vertexes[checkGLVertex(LittleShort(ml->v2))];
+    SEG_SET_V1(&segs[i], &vertexes[checkGLVertex(LittleShort(ml->v1))]);
+    SEG_SET_V2(&segs[i], &vertexes[checkGLVertex(LittleShort(ml->v2))]);
 
     if(ml->linedef != (unsigned short)-1) // skip minisegs
     {
       ldef = &lines[ml->linedef];
-      segs[i].linedef = ldef;
-      segs[i].data->angle = R_PointToAngle2(segs[i].v1->x,segs[i].v1->y,segs[i].v2->x,segs[i].v2->y);
+      SEG_SET_LINE(&segs[i], ldef);
+      segs_data[&segs[i] - segs].angle = R_PointToAngle2(SEG_V1(&segs[i])->x, SEG_V1(&segs[i])->y, SEG_V2(&segs[i])->x, SEG_V2(&segs[i])->y);
 
-      segs[i].sidedef = &sides[ldef->sidenum[ml->side]];
-      segs[i].frontsector = sides[ldef->sidenum[ml->side]].sector;
+      SEG_SET_SIDE(&segs[i], &sides[ldef->sidenum[ml->side]]);
+      SEG_SET_FRONT(&segs[i], sides[ldef->sidenum[ml->side]].sector);
       if (ldef->flags & ML_TWOSIDED)
-        segs[i].backsector = sides[ldef->sidenum[ml->side^1]].sector;
+        SEG_SET_BACK(&segs[i], sides[ldef->sidenum[ml->side^1]].sector);
       else
-        segs[i].backsector = 0;
+        SEG_SET_NOBACK(&segs[i]);
 
       if (ml->side)
-        segs[i].data->offset = GetOffset(segs[i].v1, ldef->v2);
+        segs_data[&segs[i] - segs].offset = GetOffset(SEG_V1(&segs[i]), ldef->v2);
       else
-        segs[i].data->offset = GetOffset(segs[i].v1, ldef->v1);
+        segs_data[&segs[i] - segs].offset = GetOffset(SEG_V1(&segs[i]), ldef->v1);
     }
     else
     {
-      segs[i].data->angle  = 0;
-      segs[i].data->offset  = 0;
-      segs[i].linedef = NULL;
-      segs[i].sidedef = NULL;
-      segs[i].frontsector = NULL;
-      segs[i].backsector  = NULL;
+      segs_data[&segs[i] - segs].angle  = 0;
+      segs_data[&segs[i] - segs].offset  = 0;
+      SEG_SET_NOLINE(&segs[i]);
+      SEG_SET_NOSIDE(&segs[i]);
+      SEG_SET_NOFRONT(&segs[i]);
+      SEG_SET_NOBACK(&segs[i]);
     }
     ml++;
   }
@@ -950,7 +946,8 @@ static void P_LoadSectors (int lump)
   int  i;
 
   numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
-  sectors = calloc_IfSameLevel(sectors, numsectors, sizeof(sector_t));
+  //sectors = calloc_IfSameLevel(sectors, numsectors, sizeof(sector_t));
+  sectors = calloc_IfSameLevel(sectors, 65536, sizeof(sector_t));
   data = W_LumpByNum (lump); // cph - wad lump handling updated
 
   dsda_ResetSectorIDList(numsectors);
@@ -1248,8 +1245,6 @@ static void P_LoadZSegs (const byte *data)
     seg_t *li = segs+i;
     const mapseg_znod_t *ml = (const mapseg_znod_t *) data + i;
 
-    li->data = segs_data + i;
-
     v1 = LittleLong(ml->v1);
     v2 = LittleLong(ml->v2);
 
@@ -1263,7 +1258,7 @@ static void P_LoadZSegs (const byte *data)
     }
 
     ldef = &lines[linedef];
-    li->linedef = ldef;
+    SEG_SET_LINE(li, ldef);
     side = ml->side;
 
     //e6y: fix wrong side index
@@ -1280,31 +1275,31 @@ static void P_LoadZSegs (const byte *data)
         linedef, i, (unsigned)ldef->sidenum[side]);
     }
 
-    li->sidedef = &sides[ldef->sidenum[side]];
+    SEG_SET_SIDE(li, &sides[ldef->sidenum[side]]);
 
     /* cph 2006/09/30 - our frontsector can be the second side of the
     * linedef, so must check for NO_INDEX in case we are incorrectly
     * referencing the back of a 1S line */
     if (ldef->sidenum[side] != NO_INDEX)
     {
-      li->frontsector = sides[ldef->sidenum[side]].sector;
+      SEG_SET_FRONT(li, sides[ldef->sidenum[side]].sector);
     }
     else
     {
-      li->frontsector = 0;
+      SEG_SET_NOFRONT(li);
       lprintf(LO_WARN, "P_LoadZSegs: front of seg %i has no sidedef\n", i);
     }
 
     if ((ldef->flags & ML_TWOSIDED) && (ldef->sidenum[side^1] != NO_INDEX))
-      li->backsector = sides[ldef->sidenum[side^1]].sector;
+      SEG_SET_BACK(li, sides[ldef->sidenum[side^1]].sector);
     else
-      li->backsector = 0;
+      SEG_SET_NOBACK(li);
 
-    li->v1 = &vertexes[v1];
-    li->v2 = &vertexes[v2];
+    SEG_SET_V1(li, &vertexes[v1]);
+    SEG_SET_V2(li, &vertexes[v2]);
 
-    li->data->offset = GetOffset(li->v1, (side ? ldef->v2 : ldef->v1));
-    li->data->angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
+    segs_data[li - segs].offset = GetOffset(SEG_V1(li), (side ? ldef->v2 : ldef->v1));
+    segs_data[li - segs].angle = R_PointToAngle2(SEG_V1(&segs[i])->x, SEG_V1(&segs[i])->y, SEG_V2(&segs[i])->x, SEG_V2(&segs[i])->y);
     //li->angle = (int)((float)atan2(li->v2->y - li->v1->y,li->v2->x - li->v1->x) * (ANG180 / M_PI));
   }
 }
@@ -1349,14 +1344,14 @@ static void P_LoadGLZSegs(const byte *data, int type)
 
       seg = &segs[subsectors[i].firstline + j];
 
-      seg->v1 = &vertexes[v1];
+      SEG_SET_V1(seg, &vertexes[v1]);
       if (j == 0)
       {
-        seg[subsectors[i].numlines - 1].v2 = seg->v1;
+        SEG_SET_V2(&seg[subsectors[i].numlines - 1], SEG_V1(seg));
       }
       else
       {
-        seg[-1].v2 = seg->v1;
+        SEG_SET_V2(&seg[-1], SEG_V1(seg));
       }
 
       if (line != 0xffffffff)
@@ -1370,7 +1365,7 @@ static void P_LoadGLZSegs(const byte *data, int type)
         }
 
         ldef = &lines[line];
-        seg->linedef = ldef;
+        SEG_SET_LINE(seg, ldef);
 
         if (side != 0 && side != 1)
         {
@@ -1384,36 +1379,36 @@ static void P_LoadGLZSegs(const byte *data, int type)
             line, i, j, (unsigned)ldef->sidenum[side]);
         }
 
-        seg->sidedef = &sides[ldef->sidenum[side]];
+        SEG_SET_SIDE(seg, &sides[ldef->sidenum[side]]);
 
         /* cph 2006/09/30 - our frontsector can be the second side of the
          * linedef, so must check for NO_INDEX in case we are incorrectly
          * referencing the back of a 1S line */
         if (ldef->sidenum[side] != NO_INDEX)
         {
-          seg->frontsector = sides[ldef->sidenum[side]].sector;
+          SEG_SET_FRONT(seg, sides[ldef->sidenum[side]].sector);
         }
         else
         {
-          seg->frontsector = 0;
+          SEG_SET_NOFRONT(seg);
           lprintf(LO_WARN, "P_LoadGLZSegs: front of seg %d, %d has no sidedef\n", i, j);
         }
 
         if ((ldef->flags & ML_TWOSIDED) && (ldef->sidenum[side^1] != NO_INDEX))
-          seg->backsector = sides[ldef->sidenum[side^1]].sector;
+          SEG_SET_BACK(seg, sides[ldef->sidenum[side^1]].sector);
         else
-          seg->backsector = 0;
+          SEG_SET_NOBACK(seg);
 
-        seg->data->offset = GetOffset(seg->v1, (side ? ldef->v2 : ldef->v1));
+        segs_data[seg - segs].offset = GetOffset(SEG_V1(seg), (side ? ldef->v2 : ldef->v1));
       }
       else
       {
-        seg->data->angle = 0;
-        seg->data->offset = 0;
-        seg->linedef = NULL;
-        seg->sidedef = NULL;
-        seg->frontsector = segs[subsectors[i].firstline].frontsector;
-        seg->backsector = seg->frontsector;
+        segs_data[seg - segs].angle = 0;
+        segs_data[seg - segs].offset = 0;
+        SEG_SET_NOLINE(seg);
+        SEG_SET_NOSIDE(seg);
+        SEG_SET_FRONT(seg, SEG_FRONT(&segs[subsectors[i].firstline]));
+        SEG_SET_BACK(seg, SEG_FRONT(seg));
       }
     }
 
@@ -1424,8 +1419,8 @@ static void P_LoadGLZSegs(const byte *data, int type)
 
       seg = &segs[subsectors[i].firstline + j];
 
-      if (seg->linedef)
-        seg->data->angle = R_PointToAngle2(segs[i].v1->x, segs[i].v1->y, segs[i].v2->x, segs[i].v2->y);
+      if (SEG_HAS_LINE(seg))
+        segs_data[seg - segs].angle = R_PointToAngle2(SEG_V1(&segs[i])->x, SEG_V1(&segs[i])->y, SEG_V2(&segs[i])->x, SEG_V2(&segs[i])->y);
     }
   }
 }
@@ -3095,9 +3090,9 @@ static int P_GroupLines (void)
     subsectors[i].sector = NULL;
     for(j=0; j<subsectors[i].numlines; j++)
     {
-      if(seg->sidedef)
+      if(SEG_HAS_SIDE(seg))
       {
-        subsectors[i].sector = seg->sidedef->sector;
+        subsectors[i].sector = SEG_SIDE(seg)->sector;
         break;
       }
       seg++;
@@ -3264,13 +3259,13 @@ static void P_RemoveSlimeTrails(void)         // killough 10/98
   {
     const line_t *l;
 
-    if (!segs[i].linedef)
+    if (!SEG_HAS_LINE(&segs[i]))
       break;                            //e6y: probably 'continue;'?
 
-    l = segs[i].linedef;            // The parent linedef
+    l = SEG_LINE(&segs[i]);                 // The parent linedef
     if (l->dx && l->dy)                     // We can ignore orthogonal lines
     {
-    vertex_t *v = segs[i].v1;
+    vertex_t *v = SEG_V1(&segs[i]);
     do
       if (!hit[v - vertexes])           // If we haven't processed vertex
         {
@@ -3301,7 +3296,7 @@ static void P_RemoveSlimeTrails(void)         // killough 10/98
         }
       }
         }  // Obsfucated C contest entry:   :)
-    while ((v != segs[i].v2) && (v = segs[i].v2));
+    while ((v != SEG_V2(&segs[i])) && (v = SEG_V2(&segs[i])));
   }
     }
   Z_Free(hit);
@@ -3314,12 +3309,12 @@ static void R_CalcSegsLength(void)
   {
     double length;
     seg_t *li = segs+i;
-    int64_t dx = (int64_t)li->v2->px - li->v1->px;
-    int64_t dy = (int64_t)li->v2->py - li->v1->py;
+    int64_t dx = (int64_t)SEG_V2(li)->px - SEG_V1(li)->px;
+    int64_t dy = (int64_t)SEG_V2(li)->py - SEG_V1(li)->py;
     length = sqrt((double)dx*dx + (double)dy*dy);
-    li->data->length = (int64_t)length;
+    segs_data[li - segs].length = (int64_t)length;
     // [crispy] re-calculate angle used for rendering
-    li->data->pangle = R_PointToAngleEx2(li->v1->px, li->v1->py, li->v2->px, li->v2->py);
+    segs_data[li - segs].pangle = R_PointToAngleEx2(SEG_V1(li)->px, SEG_V1(li)->py, SEG_V2(li)->px, SEG_V2(li)->py);
   }
 }
 
@@ -3598,19 +3593,19 @@ void P_InitSubsectorsLines(void)
 
     for (seg = segs + subsectors[num].firstline; seg < seg_last; seg++)
     {
-      if (!seg->linedef) continue;
-      seg->linedef->validcount = 0;
-      seg->linedef->validcount2 = 0;
+      if (!SEG_HAS_LINE(seg)) continue;
+      SEG_LINE(seg)->validcount = 0;
+      SEG_LINE(seg)->validcount2 = 0;
     }
 
     for (seg = segs + subsectors[num].firstline; seg < seg_last; seg++)
     {
-      if (!seg->linedef) continue;
+      if (!SEG_HAS_LINE(seg)) continue;
 
-      if (seg->linedef->validcount == 1)
+      if (SEG_LINE(seg)->validcount == 1)
         continue;
 
-      seg->linedef->validcount = 1;
+      SEG_LINE(seg)->validcount = 1;
       count++;
     }
   }
@@ -3627,32 +3622,32 @@ void P_InitSubsectorsLines(void)
 
     for (seg = segs + subsectors[num].firstline; seg < seg_last; seg++)
     {
-      if (!seg->linedef) continue;
-      seg->linedef->validcount = 0;
-      seg->linedef->validcount2 = 0;
+      if (!SEG_HAS_LINE(seg)) continue;
+      SEG_LINE(seg)->validcount = 0;
+      SEG_LINE(seg)->validcount2 = 0;
     }
 
     for (seg = segs + subsectors[num].firstline; seg < seg_last; seg++)
     {
       ssline_t *ssline = &sslines[count];
-      if (!seg->linedef) continue;
+      if (!SEG_HAS_LINE(seg)) continue;
 
-      if (seg->linedef->validcount == 1)
+      if (SEG_LINE(seg)->validcount == 1)
         continue;
 
-      seg->linedef->validcount = 1;
+      SEG_LINE(seg)->validcount = 1;
 
       ssline->seg = seg;
-      ssline->linedef = seg->linedef;
+      ssline->linedef = SEG_LINE(seg);
 
-      ssline->x1 = seg->linedef->v1->x;
-      ssline->y1 = seg->linedef->v1->y;
-      ssline->x2 = seg->linedef->v2->x;
-      ssline->y2 = seg->linedef->v2->y;
-      ssline->bbox[0] = seg->linedef->bbox[0];
-      ssline->bbox[1] = seg->linedef->bbox[1];
-      ssline->bbox[2] = seg->linedef->bbox[2];
-      ssline->bbox[3] = seg->linedef->bbox[3];
+      ssline->x1 = SEG_LINE(seg)->v1->x;
+      ssline->y1 = SEG_LINE(seg)->v1->y;
+      ssline->x2 = SEG_LINE(seg)->v2->x;
+      ssline->y2 = SEG_LINE(seg)->v2->y;
+      ssline->bbox[0] = SEG_LINE(seg)->bbox[0];
+      ssline->bbox[1] = SEG_LINE(seg)->bbox[1];
+      ssline->bbox[2] = SEG_LINE(seg)->bbox[2];
+      ssline->bbox[3] = SEG_LINE(seg)->bbox[3];
 
       count++;
     }

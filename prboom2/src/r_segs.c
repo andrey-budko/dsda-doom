@@ -232,7 +232,7 @@ const int fake_contrast_value = 16;
 
 static dboolean R_FakeContrast(seg_t *seg)
 {
-  return fake_contrast && seg && !(seg->sidedef->flags & SF_NOFAKECONTRAST) && !hexen;
+  return fake_contrast && seg && !(SEG_SIDE(seg)->flags & SF_NOFAKECONTRAST) && !hexen;
 }
 
 void R_AddContrast(seg_t *seg, int *base_lightlevel)
@@ -241,20 +241,20 @@ void R_AddContrast(seg_t *seg, int *base_lightlevel)
    * It looks crap in outdoor areas */
   if (R_FakeContrast(seg))
   {
-    if (seg->linedef->dy == 0)
+    if (SEG_LINE(seg)->dy == 0)
     {
       *base_lightlevel -= fake_contrast_value;
     }
-    else if (seg->linedef->dx == 0)
+    else if (SEG_LINE(seg)->dx == 0)
     {
       *base_lightlevel += fake_contrast_value;
     }
-    else if (seg->sidedef->flags & SF_SMOOTHLIGHTING)
+    else if (SEG_SIDE(seg)->flags & SF_SMOOTHLIGHTING)
     {
       double dx, dy;
 
-      dx = (double) seg->linedef->dx / FRACUNIT;
-      dy = (double) seg->linedef->dy / FRACUNIT;
+      dx = (double)SEG_LINE(seg)->dx / FRACUNIT;
+      dy = (double)SEG_LINE(seg)->dy / FRACUNIT;
 
       *base_lightlevel +=
         lround(fabs(atan(dy / dx) * 2 / M_PI) * (2 * fake_contrast_value) - fake_contrast_value);
@@ -368,24 +368,24 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
   // killough 4/11/98: draw translucent 2s normal textures
 
   colfunc = R_GetDrawColumnFunc(RDC_PIPELINE_STANDARD, RDRAW_FILTER_POINT);
-  if (curline->linedef->tranmap)
+  if (SEG_LINE(curline)->tranmap)
   {
     colfunc = R_GetDrawColumnFunc(RDC_PIPELINE_TRANSLUCENT, RDRAW_FILTER_POINT);
-    tranmap = curline->linedef->tranmap;
+    tranmap = SEG_LINE(curline)->tranmap;
   }
   // killough 4/11/98: end translucent 2s normal code
 
-  frontsector = curline->frontsector;
-  backsector = curline->backsector;
+  frontsector = SEG_FRONT(curline);
+  backsector = SEG_BACK(curline);
 
   // cph 2001/11/25 - middle textures did not animate in v1.2
-  texnum = curline->sidedef->midtexture;
+  texnum = SEG_SIDE(curline)->midtexture;
   if (raven || !comp[comp_maskedanim])
     texnum = texturetranslation[texnum];
 
   // killough 4/13/98: get correct lightlevel for 2s normal textures
   rw_lightlevel = R_FakeFlat(frontsector, &tempsec, NULL, NULL, false) ->lightlevel;
-  R_ApplyMidLight(curline->sidedef);
+  R_ApplyMidLight(SEG_SIDE(curline));
 
   maskedtexturecol = ds->maskedtexturecol;
 
@@ -395,7 +395,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
   mceilingclip = ds->sprtopclip;
 
   // find positioning
-  if (curline->linedef->flags & ML_DONTPEGBOTTOM)
+  if (SEG_LINE(curline)->flags & ML_DONTPEGBOTTOM)
     {
       dcvars.texturemid = frontsector->floorheight > backsector->floorheight
         ? frontsector->floorheight : backsector->floorheight;
@@ -408,7 +408,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
       dcvars.texturemid = dcvars.texturemid - viewz;
     }
 
-  dcvars.texturemid += curline->sidedef->rowoffset + curline->sidedef->rowoffset_mid;
+  dcvars.texturemid += SEG_SIDE(curline)->rowoffset + SEG_SIDE(curline)->rowoffset_mid;
 
   patch = R_TextureCompositePatchByNum(texnum);
 
@@ -442,7 +442,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
         dcvars.iscale = 0xffffffffu / (unsigned) spryscale;
 
         texturecolumn = maskedtexturecol[dcvars.x] +
-                        (curline->sidedef->textureoffset_mid >> FRACBITS);
+                        (SEG_SIDE(curline)->textureoffset_mid >> FRACBITS);
 
         // killough 1/25/98: here's where Medusa came in, because
         // it implicitly assumed that the column was all one patch.
@@ -552,7 +552,7 @@ static void R_RenderSegLoop (void)
     if (midtexture)
     {
       specific_texturecolumn = texturecolumn +
-                               (curline->sidedef->textureoffset_mid >> FRACBITS);
+                               (SEG_SIDE(curline)->textureoffset_mid >> FRACBITS);
 
       dcvars.yl = yl;     // single sided line
       dcvars.yh = yh;
@@ -563,7 +563,7 @@ static void R_RenderSegLoop (void)
       dcvars.nextsource = R_GetTextureColumn(tex_patch, specific_texturecolumn+1);
       dcvars.texheight = midtexheight;
       if (!fixedcolormap)
-        R_ApplyMidLight(curline->sidedef);
+        R_ApplyMidLight(SEG_SIDE(curline));
       R_ApplyLightColormap(&dcvars, rw_scale);
       colfunc(&dcvars);
       tex_patch = NULL;
@@ -585,7 +585,7 @@ static void R_RenderSegLoop (void)
         if (mid >= yl)
         {
           specific_texturecolumn = texturecolumn +
-                                   (curline->sidedef->textureoffset_top >> FRACBITS);
+                                   (SEG_SIDE(curline)->textureoffset_top >> FRACBITS);
 
           dcvars.yl = yl;
           dcvars.yh = mid;
@@ -596,7 +596,7 @@ static void R_RenderSegLoop (void)
           dcvars.nextsource = R_GetTextureColumn(tex_patch,specific_texturecolumn+1);
           dcvars.texheight = toptexheight;
           if (!fixedcolormap)
-            R_ApplyTopLight(curline->sidedef);
+            R_ApplyTopLight(SEG_SIDE(curline));
           R_ApplyLightColormap(&dcvars, rw_scale);
           colfunc(&dcvars);
           tex_patch = NULL;
@@ -623,7 +623,7 @@ static void R_RenderSegLoop (void)
         if (mid <= yh)
         {
           specific_texturecolumn = texturecolumn +
-                                   (curline->sidedef->textureoffset_bottom >> FRACBITS);
+                                   (SEG_SIDE(curline)->textureoffset_bottom >> FRACBITS);
 
           dcvars.yl = mid;
           dcvars.yh = yh;
@@ -634,7 +634,7 @@ static void R_RenderSegLoop (void)
           dcvars.nextsource = R_GetTextureColumn(tex_patch, specific_texturecolumn+1);
           dcvars.texheight = bottomtexheight;
           if (!fixedcolormap)
-            R_ApplyBottomLight(curline->sidedef);
+            R_ApplyBottomLight(SEG_SIDE(curline));
           R_ApplyLightColormap(&dcvars, rw_scale);
           colfunc(&dcvars);
           tex_patch = NULL;
@@ -686,8 +686,8 @@ void R_StoreWallRange(const int start, const int stop)
     maxdrawsegs = newmax;
   }
 
-  if(curline->linedef)
-    curline->linedef->flags |= ML_MAPPED;
+  if(SEG_HAS_LINE(curline))
+      SEG_LINE(curline)->flags |= ML_MAPPED;
 
   if (V_IsOpenGLMode())
   {
@@ -703,22 +703,22 @@ void R_StoreWallRange(const int start, const int stop)
     I_Error ("Bad R_RenderWallRange: %i to %i", start , stop);
 #endif
 
-  sidedef = curline->sidedef;
-  linedef = curline->linedef;
+  sidedef = SEG_SIDE(curline);
+  linedef = SEG_LINE(curline);
 
   // mark the segment as visible for auto map
   linedef->flags |= ML_MAPPED;
 
   // calculate rw_distance for scale calculation
-  rw_normalangle = curline->data->pangle + ANG90; // [crispy] use re-calculated angle
+  rw_normalangle = segs_data[curline - segs].pangle + ANG90; // [crispy] use re-calculated angle
 
   // [Linguica] Fix long wall error
   // shift right to avoid possibility of int64 overflow in rw_distance calculation
-  dx = ((int64_t)curline->v2->px - curline->v1->px) >> shift_bits;
-  dy = ((int64_t)curline->v2->py - curline->v1->py) >> shift_bits;
-  dx1 = ((int64_t)viewx - curline->v1->px) >> shift_bits;
-  dy1 = ((int64_t)viewy - curline->v1->py) >> shift_bits;
-  len = curline->data->length >> shift_bits;
+  dx = ((int64_t)SEG_V2(curline)->px - SEG_V1(curline)->px) >> shift_bits;
+  dy = ((int64_t)SEG_V2(curline)->py - SEG_V1(curline)->py) >> shift_bits;
+  dx1 = ((int64_t)viewx - SEG_V1(curline)->px) >> shift_bits;
+  dy1 = ((int64_t)viewy - SEG_V1(curline)->py) >> shift_bits;
+  len = segs_data[curline - segs].length >> shift_bits;
 
   dist = (((dy * dx1 - dx * dy1) / len) << shift_bits);
   rw_distance = (fixed_t)BETWEEN(INT_MIN, INT_MAX, dist);
@@ -926,7 +926,7 @@ void R_StoreWallRange(const int start, const int stop)
   {
     rw_offset = (fixed_t)(((dx * dx1 + dy * dy1) / len) << shift_bits);
 
-    rw_offset += sidedef->textureoffset + curline->data->offset;
+    rw_offset += sidedef->textureoffset + segs_data[curline - segs].offset;
 
     rw_centerangle = ANG90 + viewangle - rw_normalangle;
 

@@ -1592,12 +1592,12 @@ void P_ArchivePolyobjs(void)
       line_t *line;
 
       seg = po->segs[seg_i];
-      line = seg->linedef;
+      line = SEG_LINE(seg);
 
-      P_ArchiveVertex(seg->v1);
-      P_ArchiveVertex(seg->v2);
+      P_ArchiveVertex(SEG_V1(seg));
+      P_ArchiveVertex(SEG_V2(seg));
 
-      P_SAVE_X(seg->data->angle);
+      P_SAVE_X(segs_data[seg - segs].angle);
       P_SAVE_X(line->slopetype);
       P_SAVE_ARRAY(line->bbox);
       P_SAVE_X(line->dx);
@@ -1637,12 +1637,12 @@ void P_UnArchivePolyobjs(void)
       line_t *line;
 
       seg = po->segs[seg_i];
-      line = seg->linedef;
+      line = SEG_LINE(seg);
 
-      P_UnArchiveVertex(seg->v1);
-      P_UnArchiveVertex(seg->v2);
+      P_UnArchiveVertex(SEG_V1(seg));
+      P_UnArchiveVertex(SEG_V2(seg));
 
-      P_LOAD_X(seg->data->angle);
+      P_LOAD_X(segs_data[seg - segs].angle);
       P_LOAD_X(line->slopetype);
       P_LOAD_ARRAY(line->bbox);
       P_LOAD_X(line->dx);

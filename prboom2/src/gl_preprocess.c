@@ -254,10 +254,10 @@ static void gld_FlatConvexCarver(int ssidx, int num, divline_t *list)
   for(i=num; i<numclippers; i++)
   {
     seg_t *seg = &segs[ssec->firstline+i-num];
-    clippers[i].x = seg->v1->x;
-    clippers[i].y = seg->v1->y;
-    clippers[i].dx = seg->v2->x-seg->v1->x;
-    clippers[i].dy = seg->v2->y-seg->v1->y;
+    clippers[i].x = SEG_V1(seg)->x;
+    clippers[i].y = SEG_V1(seg)->y;
+    clippers[i].dx = SEG_V2(seg)->x-SEG_V1(seg)->x;
+    clippers[i].dy = SEG_V2(seg)->y-SEG_V1(seg)->y;
   }
 
   // Setup the 'worldwide' polygon.
@@ -756,11 +756,11 @@ static void gld_GetSubSectorVertices(void)
 
       for (j = 0; j < numedgepoints; j++)
       {
-        flats_vbo[gld_num_vertexes].u =( (float)(segs[ssector->firstline + j].v1->x)/FRACUNIT)/64.0f;
-        flats_vbo[gld_num_vertexes].v =(-(float)(segs[ssector->firstline + j].v1->y)/FRACUNIT)/64.0f;
-        flats_vbo[gld_num_vertexes].x = -(float)(segs[ssector->firstline + j].v1->x)/MAP_SCALE;
+        flats_vbo[gld_num_vertexes].u =( (float)(SEG_V1(&segs[ssector->firstline + j])->x)/FRACUNIT)/64.0f;
+        flats_vbo[gld_num_vertexes].v =(-(float)(SEG_V1(&segs[ssector->firstline + j])->y)/FRACUNIT)/64.0f;
+        flats_vbo[gld_num_vertexes].x = -(float)(SEG_V1(&segs[ssector->firstline + j])->x)/MAP_SCALE;
         flats_vbo[gld_num_vertexes].y = 0.0f;
-        flats_vbo[gld_num_vertexes].z =  (float)(segs[ssector->firstline + j].v1->y)/MAP_SCALE;
+        flats_vbo[gld_num_vertexes].z =  (float)(SEG_V1(&segs[ssector->firstline + j])->y)/MAP_SCALE;
         gld_num_vertexes++;
       }
     }
@@ -1007,10 +1007,10 @@ static void gld_PreprocessSegs(void)
   gl_segs=Z_Malloc(numsegs*sizeof(GLSeg));
   for (i=0; i<numsegs; i++)
   {
-    gl_segs[i].x1=-(float)segs[i].v1->x/(float)MAP_SCALE;
-    gl_segs[i].z1= (float)segs[i].v1->y/(float)MAP_SCALE;
-    gl_segs[i].x2=-(float)segs[i].v2->x/(float)MAP_SCALE;
-    gl_segs[i].z2= (float)segs[i].v2->y/(float)MAP_SCALE;
+    gl_segs[i].x1=-(float)SEG_V1(&segs[i])->x/(float)MAP_SCALE;
+    gl_segs[i].z1= (float)SEG_V1(&segs[i])->y/(float)MAP_SCALE;
+    gl_segs[i].x2=-(float)SEG_V2(&segs[i])->x/(float)MAP_SCALE;
+    gl_segs[i].z2= (float)SEG_V2(&segs[i])->y/(float)MAP_SCALE;
   }
 
   gl_lines=Z_Malloc(numlines*sizeof(GLSeg));

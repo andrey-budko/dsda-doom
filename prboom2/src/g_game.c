@@ -2292,7 +2292,7 @@ void RecalculateDrawnSubsectors(void)
     seg_t *seg = &segs[sub->firstline];
     for (j = 0; j < sub->numlines; j++, seg++)
     {
-      if (seg->linedef && seg->linedef->flags & ML_MAPPED)
+      if (SEG_HAS_LINE(seg) && SEG_LINE(seg)->flags & ML_MAPPED)
       {
         map_subsectors[i] = 1;
       }

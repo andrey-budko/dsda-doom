@@ -170,7 +170,7 @@ dboolean P_SightBlockLinesIterator(int x, int y)
           segList = polyLink->polyobj->segs;
 
           for (i = 0; i < polyLink->polyobj->numsegs; i++, segList++)
-            if (!P_SightCheckLine((*segList)->linedef))
+            if (!P_SightCheckLine(SEG_LINE(*segList)))
               return false;
 
           polyLink->polyobj->validcount = validcount;
@@ -515,8 +515,8 @@ dboolean P_CrossSubsector_PrBoom(int num)
     if (ssline->linedef->flags & ML_TWOSIDED)
     {
       // crosses a two sided line
-      front = ssline->seg->frontsector;
-      back = ssline->seg->backsector;
+      front = SEG_FRONT(ssline->seg);
+      back = SEG_BACK(ssline->seg);
 
       // no wall to block sight with?
       if (front->floorheight == back->floorheight
@@ -617,11 +617,11 @@ dboolean P_CrossSubsector_Doom(int num)
       return false;
 
     // crosses a two sided line
-    front = ssline->seg->frontsector;
-    back = ssline->seg->backsector;
+    front = SEG_FRONT(ssline->seg);
+    back = SEG_BACK(ssline->seg);
 
     // missed back side on two-sided lines.
-    if (!back)
+    if (!SEG_HAS_BACK(ssline->seg))
     {
       back = GetSectorAtNullAddress();
     }
@@ -722,8 +722,8 @@ dboolean P_CrossSubsector_Boom(int num)
       return false;
 
     // crosses a two sided line
-    front = ssline->seg->frontsector;
-    back = ssline->seg->backsector;
+    front = SEG_FRONT(ssline->seg);
+    back = SEG_BACK(ssline->seg);
 
     // no wall to block sight with?
     if (front->floorheight == back->floorheight

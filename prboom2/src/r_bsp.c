@@ -34,6 +34,7 @@
 #include "doomstat.h"
 #include "m_bbox.h"
 #include "p_spec.h"
+#include "r_defs.h"
 #include "r_main.h"
 #include "r_segs.h"
 #include "r_plane.h"
@@ -146,10 +147,10 @@ static void R_RecalcLineFlags(line_t *linedef)
 
     // preserve a kind of transparent door/lift special effect:
     && (backsector->ceilingheight >= frontsector->ceilingheight ||
-        curline->sidedef->toptexture)
+        SEG_SIDE(curline)->toptexture)
 
     && (backsector->floorheight <= frontsector->floorheight ||
-        curline->sidedef->bottomtexture)
+        SEG_SIDE(curline)->bottomtexture)
 
     // properly render skies (consider door "open" if both ceilings are sky):
     && (backsector->ceilingpic !=skyflatnum ||
@@ -166,7 +167,7 @@ static void R_RecalcLineFlags(line_t *linedef)
     if (
       backsector->ceilingheight != frontsector->ceilingheight
       || backsector->floorheight != frontsector->floorheight
-      || curline->sidedef->midtexture
+      || SEG_SIDE(curline)->midtexture
       || P_FloorPlanesDiffer(frontsector, backsector)
       || P_CeilingPlanesDiffer(frontsector, backsector)
     ) {
@@ -177,7 +178,7 @@ static void R_RecalcLineFlags(line_t *linedef)
   }
 
   /* cph - I'm too lazy to try and work with offsets in this */
-  if (curline->sidedef->rowoffset) return;
+  if (SEG_SIDE(curline)->rowoffset) return;
 
   /* Now decide on texture tiling */
   if (linedef->flags & ML_TWOSIDED) {
@@ -185,18 +186,18 @@ static void R_RecalcLineFlags(line_t *linedef)
 
     /* Does top texture need tiling */
     if ((c = frontsector->ceilingheight - backsector->ceilingheight) > 0 &&
-   (textureheight[texturetranslation[curline->sidedef->toptexture]] > c))
+   (textureheight[texturetranslation[SEG_SIDE(curline)->toptexture]] > c))
       linedef->r_flags |= RF_TOP_TILE;
 
     /* Does bottom texture need tiling */
     if ((c = frontsector->floorheight - backsector->floorheight) > 0 &&
-   (textureheight[texturetranslation[curline->sidedef->bottomtexture]] > c))
+   (textureheight[texturetranslation[SEG_SIDE(curline)->bottomtexture]] > c))
       linedef->r_flags |= RF_BOT_TILE;
   } else {
     int c;
     /* Does middle texture need tiling */
     if ((c = frontsector->ceilingheight - frontsector->floorheight) > 0 &&
-   (textureheight[texturetranslation[curline->sidedef->midtexture]] > c))
+   (textureheight[texturetranslation[SEG_SIDE(curline)->midtexture]] > c))
       linedef->r_flags |= RF_MID_TILE;
   }
 }
@@ -312,7 +313,7 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
   // check for closed sectors!
   if (backsector->ceilingheight <= frontsector->floorheight)
   {
-    if (seg->sidedef->toptexture == NO_TEXTURE)
+    if (SEG_SIDE(seg)->toptexture == NO_TEXTURE)
       return false;
 
     if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
@@ -323,7 +324,7 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
 
   if (frontsector->ceilingheight <= backsector->floorheight)
   {
-    if (seg->sidedef->bottomtexture == NO_TEXTURE)
+    if (SEG_SIDE(seg)->bottomtexture == NO_TEXTURE)
       return false;
 
     // properly render skies (consider door "open" if both floors are sky):
@@ -338,12 +339,12 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
     // preserve a kind of transparent door/lift special effect:
     if (backsector->ceilingheight < frontsector->ceilingheight)
     {
-      if (seg->sidedef->toptexture == NO_TEXTURE)
+      if (SEG_SIDE(seg)->toptexture == NO_TEXTURE)
         return false;
     }
     if (backsector->floorheight > frontsector->floorheight)
     {
-      if (seg->sidedef->bottomtexture == NO_TEXTURE)
+      if (SEG_SIDE(seg)->bottomtexture == NO_TEXTURE)
         return false;
     }
     if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
@@ -378,7 +379,7 @@ static void R_AddLine (seg_t *line)
 
   if (V_IsOpenGLMode())
   {
-    line_t* l = line->linedef;
+    line_t* l = SEG_LINE_NULL(line);
     sector_t* sec = subsectors[currentsubsectornum].sector;
 
     // Don't add plane to drawing list until we encounter a
@@ -390,11 +391,11 @@ static void R_AddLine (seg_t *line)
       gld_AddPlane(currentsubsectornum, floorplane, ceilingplane);
     }
 
-    angle1 = R_PointToPseudoAngle(line->v1->x, line->v1->y);
-    angle2 = R_PointToPseudoAngle(line->v2->x, line->v2->y);
+    angle1 = R_PointToPseudoAngle(SEG_V1(line)->x, SEG_V1(line)->y);
+    angle2 = R_PointToPseudoAngle(SEG_V2(line)->x, SEG_V2(line)->y);
 
     // Back side, i.e. backface culling	- read: endAngle >= startAngle!
-    if (angle2 - angle1 < ANG180 || !line->linedef)
+    if (angle2 - angle1 < ANG180 || !SEG_HAS_LINE(line))
     {
       return;
     }
@@ -405,21 +406,21 @@ static void R_AddLine (seg_t *line)
 
     map_subsectors[currentsubsectornum] = 1;
 
-    if (!line->backsector)
+    if (!SEG_HAS_BACK(line))
     {
       gld_clipper_SafeAddClipRange(angle2, angle1);
     }
     else
     {
-      if (line->frontsector == line->backsector)
+      if (line->front == line->back)
       {
-        if (texturetranslation[line->sidedef->midtexture] == NO_TEXTURE)
+        if (texturetranslation[SEG_SIDE(line)->midtexture] == NO_TEXTURE)
         {
           //e6y: nothing to do here!
           return;
         }
       }
-      if (CheckClip(line, line->frontsector, line->backsector))
+      if (CheckClip(line, SEG_FRONT(line), SEG_BACK(line)))
       {
         gld_clipper_SafeAddClipRange(angle2, angle1);
       }
@@ -434,7 +435,7 @@ static void R_AddLine (seg_t *line)
       maxdrawsegs = newmax;
     }
 
-    curline->linedef->flags |= ML_MAPPED;
+    SEG_LINE(curline)->flags |= ML_MAPPED;
 
     // proff 11/99: the rest of the calculations is not needed for OpenGL
     ds_p++->curline = curline;
@@ -443,8 +444,8 @@ static void R_AddLine (seg_t *line)
     return;
   }
 
-  angle1 = R_PointToAngleEx(line->v1->px, line->v1->py);
-  angle2 = R_PointToAngleEx(line->v2->px, line->v2->py);
+  angle1 = R_PointToAngleEx(SEG_V1(line)->px, SEG_V1(line)->py);
+  angle2 = R_PointToAngleEx(SEG_V2(line)->px, SEG_V2(line)->py);
 
   // Clip to view edges.
   span = angle1 - angle2;
@@ -495,7 +496,7 @@ static void R_AddLine (seg_t *line)
   if (x1 >= x2)       // killough 1/31/98 -- change == to >= for robustness
     return;
 
-  backsector = line->backsector;
+  backsector = SEG_BACK_NULL(line);
 
   // Single sided line?
   if (backsector)
@@ -503,7 +504,7 @@ static void R_AddLine (seg_t *line)
     backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
 
   /* cph - roll up linedef properties in flags */
-  if ((linedef = curline->linedef)->r_validcount != gametic)
+  if ((linedef = SEG_LINE(curline))->r_validcount != gametic)
     R_RecalcLineFlags(linedef);
 
   if (linedef->r_flags & RF_IGNORE)
@@ -848,7 +849,7 @@ static void R_Subsector(int num)
   line = &segs[sub->firstline];
   while (count--)
   {
-    if (line->linedef)
+    if (SEG_HAS_LINE(line))
       R_AddLine (line);
     line++;
     curline = NULL; /* cph 2001/11/18 - must clear curline now we're done with it, so R_ColourMap doesn't try using it for other things */

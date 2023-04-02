@@ -197,10 +197,10 @@ PUREFUNC int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 
 PUREFUNC int R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
-  fixed_t lx = line->v1->x;
-  fixed_t ly = line->v1->y;
-  fixed_t ldx = line->v2->x - lx;
-  fixed_t ldy = line->v2->y - ly;
+  fixed_t lx = SEG_V1(line)->x;
+  fixed_t ly = SEG_V1(line)->y;
+  fixed_t ldx = SEG_V2(line)->x - lx;
+  fixed_t ldy = SEG_V2(line)->y - ly;
 
   if (!ldx)
     return x <= lx ? ldy > 0 : ldy < 0;

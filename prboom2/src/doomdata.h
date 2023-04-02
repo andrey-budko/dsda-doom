@@ -115,6 +115,10 @@ typedef struct {
 } PACKEDATTR doom_maplinedef_t;
 
 #define NO_INDEX ((unsigned short)-1)
+#define NO_SECTOR ((unsigned short)-1)
+#define NO_LINE ((unsigned short)-1)
+#define NO_SIDE ((unsigned short)-1)
+#define NO_VERTEX ((unsigned int)-1)
 
 //
 // LineDef attributes.

@@ -397,17 +397,10 @@ typedef struct
 //
 typedef struct
 {
-  vertex_t *v1, *v2;
-  side_t* sidedef;
-  line_t* linedef;
-
-  // Sector references.
-  // Could be retrieved from linedef, too
-  // (but that would be slower -- killough)
-  // backsector is NULL for one sided lines
-
-  sector_t *frontsector, *backsector;
-  seg_data_t *data;
+  unsigned int v1i, v2i;
+  unsigned short side;
+  unsigned short line;
+  unsigned short front, back;
 } seg_t;
 
 

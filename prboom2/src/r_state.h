@@ -68,6 +68,7 @@ extern vertex_t         *vertexes;
 
 extern int              numsegs;
 extern seg_t            *segs;
+extern seg_data_t       *segs_data;
 
 extern int              numsectors;
 extern sector_t         *sectors;
@@ -113,5 +114,35 @@ extern int              rw_angle1;
 
 extern visplane_t       *floorplane;
 extern visplane_t       *ceilingplane;
+
+
+inline sector_t* SEG_BACK(seg_t* seg) { return sectors + seg->back; };
+inline sector_t* SEG_BACK_NULL(seg_t* seg) { return seg->back == NO_SECTOR ? 0 : sectors + seg->back; };
+inline void SEG_SET_BACK(seg_t* seg, sector_t* sector) { seg->back = sector - sectors; };
+inline void SEG_SET_NOBACK(seg_t* seg) { seg->back = NO_SECTOR; };
+inline dboolean SEG_HAS_BACK(seg_t* seg) { return seg->back != NO_SECTOR; };
+
+inline sector_t* SEG_FRONT(seg_t* seg) { return sectors + seg->front; };
+inline void SEG_SET_FRONT(seg_t* seg, sector_t* sector) { seg->front = sector - sectors; };
+inline void SEG_SET_NOFRONT(seg_t* seg) { seg->front = NO_SECTOR; };
+inline dboolean SEG_HAS_FRONT(seg_t* seg) { return seg->front != NO_SECTOR; };
+
+inline line_t* SEG_LINE(seg_t* seg) { return lines + seg->line; };
+inline line_t* SEG_LINE_NULL(seg_t* seg) { return seg->line == NO_LINE ? 0 : lines + seg->line; };
+inline void SEG_SET_LINE(seg_t* seg, line_t* line) { seg->line = line - lines; };
+inline void SEG_SET_NOLINE(seg_t* seg) { seg->line = NO_LINE; };
+inline dboolean SEG_HAS_LINE(seg_t* seg) { return seg->line != NO_LINE; };
+
+inline side_t* SEG_SIDE(seg_t* seg) { return sides + seg->side; };
+inline side_t* SEG_SIDE_NULL(seg_t* seg) { return seg->side == NO_SIDE ? 0 : sides + seg->side; };
+inline void SEG_SET_SIDE(seg_t* seg, side_t* side) { seg->side = side - sides; };
+inline void SEG_SET_NOSIDE(seg_t* seg) { seg->side = NO_SIDE; };
+inline dboolean SEG_HAS_SIDE(seg_t* seg) { return seg->side != NO_SIDE; };
+
+inline vertex_t* SEG_V1(seg_t* seg) { return vertexes + seg->v1i; };
+inline void SEG_SET_V1(seg_t* seg, vertex_t* vertex) { seg->v1i = vertex - vertexes; };
+
+inline vertex_t* SEG_V2(seg_t* seg) { return vertexes + seg->v2i; };
+inline void SEG_SET_V2(seg_t* seg, vertex_t* vertex) { seg->v2i = vertex - vertexes; };
 
 #endif

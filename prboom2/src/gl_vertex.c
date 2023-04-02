@@ -110,7 +110,7 @@ void gld_SplitLeftEdge(const GLWall *wall, dboolean detail)
   vertex_t *v;
   vertexsplit_info_t *vi;
 
-  v = wall->seg->linedef->v1;
+  v = SEG_LINE(wall->seg)->v1;
 
   if (v == NULL)
     return;
@@ -172,7 +172,7 @@ void gld_SplitRightEdge(const GLWall *wall, dboolean detail)
   vertex_t *v;
   vertexsplit_info_t * vi;
 
-  v = wall->seg->linedef->v2;
+  v = SEG_LINE(wall->seg)->v2;
 
   if (v == NULL)
     return;

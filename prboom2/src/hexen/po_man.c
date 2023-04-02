@@ -61,11 +61,11 @@ static fixed_t PolyStartY;
 
 static void ResetSegDrawingParameters(seg_t *seg)
 {
-  seg->v1->px = seg->v1->x;
-  seg->v1->py = seg->v1->y;
-  seg->v2->px = seg->v2->x;
-  seg->v2->py = seg->v2->y;
-  seg->data->pangle = seg->data->angle;
+  SEG_V1(seg)->px = SEG_V1(seg)->x;
+  SEG_V1(seg)->py = SEG_V1(seg)->y;
+  SEG_V2(seg)->px = SEG_V2(seg)->x;
+  SEG_V2(seg)->py = SEG_V2(seg)->y;
+  segs_data[seg - segs].pangle = segs_data[seg - segs].angle;
 }
 
 void ResetPolySubSector(polyobj_t *po)
@@ -83,8 +83,8 @@ void ResetPolySubSector(polyobj_t *po)
   {
       ResetSegDrawingParameters(*polySeg);
 
-      avg.x += (*polySeg)->v1->x >> FRACBITS;
-      avg.y += (*polySeg)->v1->y >> FRACBITS;
+      avg.x += SEG_V1(*polySeg)->x >> FRACBITS;
+      avg.y += SEG_V1(*polySeg)->y >> FRACBITS;
   }
 
   avg.x /= po->numsegs;
@@ -618,7 +618,7 @@ static int GetPolyobjMirror(int poly)
     {
         if (polyobjs[i].tag == poly)
         {
-            return ((*polyobjs[i].segs)->linedef->special_args[1]);
+            return (SEG_LINE(*polyobjs[i].segs)->special_args[1]);
         }
     }
     return 0;
@@ -637,7 +637,7 @@ static void ThrustMobj(mobj_t * mobj, seg_t * seg, polyobj_t * po)
     {
         return;
     }
-    thrustAngle = (seg->data->angle - ANG90) >> ANGLETOFINESHIFT;
+    thrustAngle = (segs_data[seg - segs].angle - ANG90) >> ANGLETOFINESHIFT;
 
     pe = po->specialdata;
     if (pe)
@@ -681,27 +681,27 @@ static void UpdateSegBBox(seg_t * seg)
 {
     line_t *line;
 
-    line = seg->linedef;
+    line = SEG_LINE(seg);
 
-    if (seg->v1->x < seg->v2->x)
+    if (SEG_V1(seg)->x < SEG_V2(seg)->x)
     {
-        line->bbox[BOXLEFT] = seg->v1->x;
-        line->bbox[BOXRIGHT] = seg->v2->x;
+        line->bbox[BOXLEFT] = SEG_V1(seg)->x;
+        line->bbox[BOXRIGHT] = SEG_V2(seg)->x;
     }
     else
     {
-        line->bbox[BOXLEFT] = seg->v2->x;
-        line->bbox[BOXRIGHT] = seg->v1->x;
+        line->bbox[BOXLEFT] = SEG_V2(seg)->x;
+        line->bbox[BOXRIGHT] = SEG_V1(seg)->x;
     }
-    if (seg->v1->y < seg->v2->y)
+    if (SEG_V1(seg)->y < SEG_V2(seg)->y)
     {
-        line->bbox[BOXBOTTOM] = seg->v1->y;
-        line->bbox[BOXTOP] = seg->v2->y;
+        line->bbox[BOXBOTTOM] = SEG_V1(seg)->y;
+        line->bbox[BOXTOP] = SEG_V2(seg)->y;
     }
     else
     {
-        line->bbox[BOXBOTTOM] = seg->v2->y;
-        line->bbox[BOXTOP] = seg->v1->y;
+        line->bbox[BOXBOTTOM] = SEG_V2(seg)->y;
+        line->bbox[BOXTOP] = SEG_V1(seg)->y;
     }
 
     // Update the line's slopetype
@@ -751,25 +751,25 @@ dboolean PO_MovePolyobj(int num, int x, int y)
     validcount++;
     for (count = po->numsegs; count; count--, segList++, prevPts++)
     {
-        if ((*segList)->linedef->validcount != validcount)
+        if (SEG_LINE(*segList)->validcount != validcount)
         {
-            (*segList)->linedef->bbox[BOXTOP] += y;
-            (*segList)->linedef->bbox[BOXBOTTOM] += y;
-            (*segList)->linedef->bbox[BOXLEFT] += x;
-            (*segList)->linedef->bbox[BOXRIGHT] += x;
-            (*segList)->linedef->validcount = validcount;
+            SEG_LINE(*segList)->bbox[BOXTOP] += y;
+            SEG_LINE(*segList)->bbox[BOXBOTTOM] += y;
+            SEG_LINE(*segList)->bbox[BOXLEFT] += x;
+            SEG_LINE(*segList)->bbox[BOXRIGHT] += x;
+            SEG_LINE(*segList)->validcount = validcount;
         }
         for (veryTempSeg = po->segs; veryTempSeg != segList; veryTempSeg++)
         {
-            if ((*veryTempSeg)->v1 == (*segList)->v1)
+            if (SEG_V1(*veryTempSeg) == SEG_V1(*segList))
             {
                 break;
             }
         }
         if (veryTempSeg == segList)
         {
-            (*segList)->v1->x += x;
-            (*segList)->v1->y += y;
+            SEG_V1(*segList)->x += x;
+            SEG_V1(*segList)->y += y;
         }
         (*prevPts).x += x;      // previous points are unique for each seg
         (*prevPts).y += y;
@@ -790,26 +790,26 @@ dboolean PO_MovePolyobj(int num, int x, int y)
         validcount++;
         while (count--)
         {
-            if ((*segList)->linedef->validcount != validcount)
+            if (SEG_LINE(*segList)->validcount != validcount)
             {
-                (*segList)->linedef->bbox[BOXTOP] -= y;
-                (*segList)->linedef->bbox[BOXBOTTOM] -= y;
-                (*segList)->linedef->bbox[BOXLEFT] -= x;
-                (*segList)->linedef->bbox[BOXRIGHT] -= x;
-                (*segList)->linedef->validcount = validcount;
+                SEG_LINE(*segList)->bbox[BOXTOP] -= y;
+                SEG_LINE(*segList)->bbox[BOXBOTTOM] -= y;
+                SEG_LINE(*segList)->bbox[BOXLEFT] -= x;
+                SEG_LINE(*segList)->bbox[BOXRIGHT] -= x;
+                SEG_LINE(*segList)->validcount = validcount;
             }
             for (veryTempSeg = po->segs; veryTempSeg != segList;
                  veryTempSeg++)
             {
-                if ((*veryTempSeg)->v1 == (*segList)->v1)
+                if (SEG_V1(*veryTempSeg) == SEG_V1(*segList))
                 {
                     break;
                 }
             }
             if (veryTempSeg == segList)
             {
-                (*segList)->v1->x -= x;
-                (*segList)->v1->y -= y;
+                SEG_V1(*segList)->x -= x;
+                SEG_V1(*segList)->y -= y;
             }
             (*prevPts).x -= x;
             (*prevPts).y -= y;
@@ -869,12 +869,12 @@ dboolean PO_RotatePolyobj(int num, angle_t angle)
     for (count = po->numsegs; count; count--, segList++, originalPts++,
          prevPts++)
     {
-        prevPts->x = (*segList)->v1->x;
-        prevPts->y = (*segList)->v1->y;
-        (*segList)->v1->x = originalPts->x;
-        (*segList)->v1->y = originalPts->y;
-        RotatePt(an, &(*segList)->v1->x, &(*segList)->v1->y, po->startSpot.x,
-                 po->startSpot.y);
+        prevPts->x = SEG_V1(*segList)->x;
+        prevPts->y = SEG_V1(*segList)->y;
+        SEG_V1(*segList)->x = originalPts->x;
+        SEG_V1(*segList)->y = originalPts->y;
+        RotatePt(an, &SEG_V1(*segList)->x, &SEG_V1(*segList)->y, po->startSpot.x,
+            po->startSpot.y);
     }
     segList = po->segs;
     blocked = false;
@@ -885,12 +885,12 @@ dboolean PO_RotatePolyobj(int num, angle_t angle)
         {
             blocked = true;
         }
-        if ((*segList)->linedef->validcount != validcount)
+        if (SEG_LINE(*segList)->validcount != validcount)
         {
             UpdateSegBBox(*segList);
-            (*segList)->linedef->validcount = validcount;
+            SEG_LINE(*segList)->validcount = validcount;
         }
-        (*segList)->data->angle += angle;
+        segs_data[(*segList) - segs].angle += angle;
     }
     if (blocked)
     {
@@ -898,19 +898,19 @@ dboolean PO_RotatePolyobj(int num, angle_t angle)
         prevPts = po->prevPts;
         for (count = po->numsegs; count; count--, segList++, prevPts++)
         {
-            (*segList)->v1->x = prevPts->x;
-            (*segList)->v1->y = prevPts->y;
+            SEG_V1(*segList)->x = prevPts->x;
+            SEG_V1(*segList)->y = prevPts->y;
         }
         segList = po->segs;
         validcount++;
         for (count = po->numsegs; count; count--, segList++, prevPts++)
         {
-            if ((*segList)->linedef->validcount != validcount)
+            if (SEG_LINE(*segList)->validcount != validcount)
             {
                 UpdateSegBBox(*segList);
-                (*segList)->linedef->validcount = validcount;
+                SEG_LINE(*segList)->validcount = validcount;
             }
-            (*segList)->data->angle -= angle;
+            segs_data[(*segList) - segs].angle -= angle;
         }
         LinkPolyobj(po);
         return false;
@@ -961,26 +961,26 @@ void LinkPolyobj(polyobj_t * po)
 
     // calculate the polyobj bbox
     tempSeg = po->segs;
-    rightX = leftX = (*tempSeg)->v1->x;
-    topY = bottomY = (*tempSeg)->v1->y;
+    rightX = leftX = SEG_V1(*tempSeg)->x;
+    topY = bottomY = SEG_V1(*tempSeg)->y;
 
     for (i = 0; i < po->numsegs; i++, tempSeg++)
     {
-        if ((*tempSeg)->v1->x > rightX)
+        if (SEG_V1(*tempSeg)->x > rightX)
         {
-            rightX = (*tempSeg)->v1->x;
+            rightX = SEG_V1(*tempSeg)->x;
         }
-        if ((*tempSeg)->v1->x < leftX)
+        if (SEG_V1(*tempSeg)->x < leftX)
         {
-            leftX = (*tempSeg)->v1->x;
+            leftX = SEG_V1(*tempSeg)->x;
         }
-        if ((*tempSeg)->v1->y > topY)
+        if (SEG_V1(*tempSeg)->y > topY)
         {
-            topY = (*tempSeg)->v1->y;
+            topY = SEG_V1(*tempSeg)->y;
         }
-        if ((*tempSeg)->v1->y < bottomY)
+        if (SEG_V1(*tempSeg)->y < bottomY)
         {
-            bottomY = (*tempSeg)->v1->y;
+            bottomY = SEG_V1(*tempSeg)->y;
         }
     }
     po->bbox[BOXRIGHT] = (rightX - bmaporgx) >> MAPBLOCKSHIFT;
@@ -1041,7 +1041,7 @@ static dboolean CheckMobjBlocking(seg_t * seg, polyobj_t * po)
     line_t *ld;
     dboolean blocked;
 
-    ld = seg->linedef;
+    ld = SEG_LINE(seg);
 
     top = (ld->bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
     bottom = (ld->bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
@@ -1116,25 +1116,25 @@ static void InitBlockMap(void)
         // calculate a rough area
         // right now, working like shit...gotta fix this...
         segList = polyobjs[i].segs;
-        leftX = rightX = (*segList)->v1->x;
-        topY = bottomY = (*segList)->v1->y;
+        leftX = rightX = SEG_V1(*segList)->x;
+        topY = bottomY = SEG_V1(*segList)->y;
         for (j = 0; j < polyobjs[i].numsegs; j++, segList++)
         {
-            if ((*segList)->v1->x < leftX)
+            if (SEG_V1(*segList)->x < leftX)
             {
-                leftX = (*segList)->v1->x;
+                leftX = SEG_V1(*segList)->x;
             }
-            if ((*segList)->v1->x > rightX)
+            if (SEG_V1(*segList)->x > rightX)
             {
-                rightX = (*segList)->v1->x;
+                rightX = SEG_V1(*segList)->x;
             }
-            if ((*segList)->v1->y < bottomY)
+            if (SEG_V1(*segList)->y < bottomY)
             {
-                bottomY = (*segList)->v1->y;
+                bottomY = SEG_V1(*segList)->y;
             }
-            if ((*segList)->v1->y > topY)
+            if (SEG_V1(*segList)->y > topY)
             {
-                topY = (*segList)->v1->y;
+                topY = SEG_V1(*segList)->y;
             }
         }
     }
@@ -1150,7 +1150,7 @@ static void IterFindPolySegs(int x, int y, seg_t ** segList)
     }
     for (i = 0; i < numsegs; i++)
     {
-        if (segs[i].v1->x == x && segs[i].v1->y == y)
+        if (SEG_V1(&segs[i])->x == x && SEG_V1(&segs[i])->y == y)
         {
             if (!segList)
             {
@@ -1160,7 +1160,7 @@ static void IterFindPolySegs(int x, int y, seg_t ** segList)
             {
                 *segList++ = &segs[i];
             }
-            IterFindPolySegs(segs[i].v2->x, segs[i].v2->y, segList);
+            IterFindPolySegs(SEG_V2(&segs[i])->x, SEG_V2(&segs[i]), segList);
             return;
         }
     }
@@ -1177,29 +1177,29 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
 
     for (i = 0; i < numsegs; i++)
     {
-        if (segs[i].linedef->special == PO_LINE_START &&
-            segs[i].linedef->special_args[0] == tag)
+        if (SEG_LINE(&segs[i])->special == PO_LINE_START &&
+            SEG_LINE(&segs[i])->special_args[0] == tag)
         {
             if (polyobjs[index].segs)
             {
                 I_Error("SpawnPolyobj:  Polyobj %d already spawned.\n", tag);
             }
-            segs[i].linedef->special = 0;
-            segs[i].linedef->special_args[0] = 0;
+            SEG_LINE(&segs[i])->special = 0;
+            SEG_LINE(&segs[i])->special_args[0] = 0;
             PolySegCount = 1;
-            PolyStartX = segs[i].v1->x;
-            PolyStartY = segs[i].v1->y;
-            IterFindPolySegs(segs[i].v2->x, segs[i].v2->y, NULL);
+            PolyStartX = SEG_V1(&segs[i])->x;
+            PolyStartY = SEG_V1(&segs[i])->y;
+            IterFindPolySegs(SEG_V2(&segs[i])->x, SEG_V2(&segs[i])->y, NULL);
 
             polyobjs[index].numsegs = PolySegCount;
             polyobjs[index].segs = Z_MallocLevel(PolySegCount * sizeof(seg_t *));
             *(polyobjs[index].segs) = &segs[i]; // insert the first seg
-            IterFindPolySegs(segs[i].v2->x, segs[i].v2->y,
+            IterFindPolySegs(SEG_V2(&segs[i])->x, SEG_V2(&segs[i])->y,
                              polyobjs[index].segs + 1);
             polyobjs[index].crush = crush;
             polyobjs[index].hurt = hurt;
             polyobjs[index].tag = tag;
-            polyobjs[index].seqType = segs[i].linedef->special_args[2];
+            polyobjs[index].seqType = SEG_LINE(&segs[i])->special_args[2];
             if (polyobjs[index].seqType < 0
                 || polyobjs[index].seqType >= SEQTYPE_NUMSEQ)
             {
@@ -1217,16 +1217,16 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
             psIndexOld = psIndex;
             for (i = 0; i < numsegs; i++)
             {
-                if (segs[i].linedef->special == PO_LINE_EXPLICIT &&
-                    segs[i].linedef->special_args[0] == tag)
+                if (SEG_LINE(&segs[i])->special == PO_LINE_EXPLICIT &&
+                    SEG_LINE(&segs[i])->special_args[0] == tag)
                 {
-                    if (!segs[i].linedef->special_args[1])
+                    if (!SEG_LINE(&segs[i])->special_args[1])
                     {
                         I_Error
                             ("SpawnPolyobj:  Explicit line missing order number (probably %d) in poly %d.\n",
                              j + 1, tag);
                     }
-                    if (segs[i].linedef->special_args[1] == j)
+                    if (SEG_LINE(&segs[i])->special_args[1] == j)
                     {
                         polySegList[psIndex] = &segs[i];
                         polyobjs[index].numsegs++;
@@ -1244,12 +1244,12 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
             //              linedef.
             for (i = 0; i < numsegs; i++)
             {
-                if (segs[i].linedef->special == PO_LINE_EXPLICIT &&
-                    segs[i].linedef->special_args[0] == tag
-                    && segs[i].linedef->special_args[1] == j)
+                if (SEG_LINE(&segs[i])->special == PO_LINE_EXPLICIT &&
+                    SEG_LINE(&segs[i])->special_args[0] == tag
+                    && SEG_LINE(&segs[i])->special_args[1] == j)
                 {
-                    segs[i].linedef->special = 0;
-                    segs[i].linedef->special_args[0] = 0;
+                    SEG_LINE(&segs[i])->special = 0;
+                    SEG_LINE(&segs[i])->special_args[0] = 0;
                 }
             }
             if (psIndex == psIndexOld)
@@ -1258,8 +1258,8 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
                 // lines with the current tag value
                 for (i = 0; i < numsegs; i++)
                 {
-                    if (segs[i].linedef->special == PO_LINE_EXPLICIT &&
-                        segs[i].linedef->special_args[0] == tag)
+                    if (SEG_LINE(&segs[i])->special == PO_LINE_EXPLICIT &&
+                        SEG_LINE(&segs[i])->special_args[0] == tag)
                     {
                         I_Error
                             ("SpawnPolyobj:  Missing explicit line %d for poly %d\n",
@@ -1279,12 +1279,12 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
             {
                 polyobjs[index].segs[i] = polySegList[i];
             }
-            polyobjs[index].seqType = (*polyobjs[index].segs)->linedef->special_args[3];
+            polyobjs[index].seqType = SEG_LINE(*polyobjs[index].segs)->special_args[3];
         }
         // Next, change the polyobjs first line to point to a mirror
         //              if it exists
-        (*polyobjs[index].segs)->linedef->special_args[1] =
-            (*polyobjs[index].segs)->linedef->special_args[2];
+        SEG_LINE(*polyobjs[index].segs)->special_args[1] =
+            SEG_LINE(*polyobjs[index].segs)->special_args[2];
     }
 }
 
@@ -1333,35 +1333,35 @@ static void TranslateToStartSpot(int tag, int originX, int originY)
     validcount++;
     for (i = 0; i < po->numsegs; i++, tempSeg++, tempPt++)
     {
-        if ((*tempSeg)->linedef->validcount != validcount)
+        if (SEG_LINE(*tempSeg)->validcount != validcount)
         {
-            (*tempSeg)->linedef->bbox[BOXTOP] -= deltaY;
-            (*tempSeg)->linedef->bbox[BOXBOTTOM] -= deltaY;
-            (*tempSeg)->linedef->bbox[BOXLEFT] -= deltaX;
-            (*tempSeg)->linedef->bbox[BOXRIGHT] -= deltaX;
-            (*tempSeg)->linedef->validcount = validcount;
+            SEG_LINE(*tempSeg)->bbox[BOXTOP] -= deltaY;
+            SEG_LINE(*tempSeg)->bbox[BOXBOTTOM] -= deltaY;
+            SEG_LINE(*tempSeg)->bbox[BOXLEFT] -= deltaX;
+            SEG_LINE(*tempSeg)->bbox[BOXRIGHT] -= deltaX;
+            SEG_LINE(*tempSeg)->validcount = validcount;
         }
         for (veryTempSeg = po->segs; veryTempSeg != tempSeg; veryTempSeg++)
         {
-            if ((*veryTempSeg)->v1 == (*tempSeg)->v1)
+            if (SEG_V1(*veryTempSeg) == SEG_V1(*tempSeg))
             {
                 break;
             }
         }
         if (veryTempSeg == tempSeg)
         {                       // the point hasn't been translated, yet
-            (*tempSeg)->v1->x -= deltaX;
-            (*tempSeg)->v1->y -= deltaY;
+            SEG_V1(*tempSeg)->x -= deltaX;
+            SEG_V1(*tempSeg)->y -= deltaY;
         }
 
         ResetSegDrawingParameters(*tempSeg);
 
-        avg.x += (*tempSeg)->v1->x >> FRACBITS;
-        avg.y += (*tempSeg)->v1->y >> FRACBITS;
+        avg.x += SEG_V1(*tempSeg)->x >> FRACBITS;
+        avg.y += SEG_V1(*tempSeg)->y >> FRACBITS;
         // the original Pts are based off the startSpot Pt, and are
         // unique to each seg, not each linedef
-        tempPt->x = (*tempSeg)->v1->x - po->startSpot.x;
-        tempPt->y = (*tempSeg)->v1->y - po->startSpot.y;
+        tempPt->x = SEG_V1(*tempSeg)->x - po->startSpot.x;
+        tempPt->y = SEG_V1(*tempSeg)->y - po->startSpot.y;
     }
     avg.x /= po->numsegs;
     avg.y /= po->numsegs;

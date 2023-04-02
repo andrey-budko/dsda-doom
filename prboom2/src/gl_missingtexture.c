@@ -520,10 +520,10 @@ void gld_SetupFloodedPlaneCoords(GLWall *wall, gl_strip_coords_t *c)
 
 void gld_SetupFloodedPlaneLight(GLWall *wall)
 {
-  if (wall->seg->backsector)
+  if (SEG_HAS_BACK(wall->seg))
   {
     float light;
-    light = gld_CalcLightLevel(wall->seg->backsector->lightlevel+(extralight<<5));
+    light = gld_CalcLightLevel(SEG_BACK(wall->seg)->lightlevel+(extralight<<5));
     gld_StaticLightAlpha(light, wall->alpha);
   }
   else
