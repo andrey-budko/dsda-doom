@@ -883,10 +883,6 @@ static GLTexture *gld_InitUnregisteredTexture(int texture_num, GLTexture *gltext
   gltexture->topoffset = 0;
   gltexture->tex_width = gld_GetTexDimension(gltexture->realtexwidth);
   gltexture->tex_height = gld_GetTexDimension(gltexture->realtexheight);
-  gltexture->width = MIN(gltexture->realtexwidth, gltexture->tex_width);
-  gltexture->height = MIN(gltexture->realtexheight, gltexture->tex_height);
-  gltexture->buffer_width = gltexture->tex_width;
-  gltexture->buffer_height = gltexture->tex_height;
   gltexture->width = gltexture->tex_width;
   gltexture->height = gltexture->tex_height;
   gltexture->buffer_width = gltexture->realtexwidth;
@@ -1093,28 +1089,7 @@ int gld_BuildTexture(GLTexture *gltexture, void *data, dboolean readonly, int wi
     }
     else
     {
-      if ((width != tex_width) || (height != tex_height))
-      {
-        if (width == tex_width)
-        {
-          tex_buffer = Z_Malloc(tex_buffer_size);
-          memcpy(tex_buffer, data, width * height * 4);
-        }
-        else
-        {
-          int y;
-          tex_buffer = Z_Calloc(1, tex_buffer_size);
-          for (y = 0; y < height; y++)
-          {
-            memcpy(tex_buffer + y * tex_width * 4,
-              ((unsigned char*)data) + y * width * 4, width * 4);
-          }
-        }
-      }
-      else
-      {
-        tex_buffer = data;
-      }
+      tex_buffer = data;
 
       glTexImage2D( GL_TEXTURE_2D, 0, gl_tex_format,
         tex_width, tex_height,
@@ -1261,10 +1236,6 @@ GLTexture *gld_RegisterPatch(int lump, int cm, dboolean is_sprite, dboolean inde
     gltexture->tex_height=gld_GetTexDimension(gltexture->realtexheight);
     gltexture->width=MIN(gltexture->realtexwidth, gltexture->tex_width);
     gltexture->height=MIN(gltexture->realtexheight, gltexture->tex_height);
-    gltexture->buffer_width=gltexture->tex_width;
-    gltexture->buffer_height=gltexture->tex_height;
-    gltexture->width=MIN(gltexture->realtexwidth, gltexture->tex_width);
-    gltexture->height=MIN(gltexture->realtexheight, gltexture->tex_height);
     gltexture->buffer_width=MAX(gltexture->realtexwidth, gltexture->tex_width);
     gltexture->buffer_height=MAX(gltexture->realtexheight, gltexture->tex_height);
 
@@ -1384,10 +1355,6 @@ GLTexture *gld_RegisterRaw(int lump, int width, int height, dboolean mipmap, dbo
     gltexture->topoffset=0;
     gltexture->tex_width=gld_GetTexDimension(gltexture->realtexwidth);
     gltexture->tex_height=gld_GetTexDimension(gltexture->realtexheight);
-    gltexture->width=MIN(gltexture->realtexwidth, gltexture->tex_width);
-    gltexture->height=MIN(gltexture->realtexheight, gltexture->tex_height);
-    gltexture->buffer_width=gltexture->tex_width;
-    gltexture->buffer_height=gltexture->tex_height;
     gltexture->width=gltexture->tex_width;
     gltexture->height=gltexture->tex_height;
     gltexture->buffer_width=gltexture->realtexwidth;
