@@ -56,6 +56,9 @@ polyblock_t **PolyBlockMap;
 polyobj_t *polyobjs;            // list of all poly-objects on the level
 int po_NumPolyobjs;
 
+static int *KnownPolySides;
+static int KnownPolySidesCount;
+
 static int PolySegCount;
 static fixed_t PolyStartX;
 static fixed_t PolyStartY;
@@ -1216,14 +1219,15 @@ static void IterFindPolySegs(int x, int y, seg_t ** segList)
 
 static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
 {
-    int i;
+    int i, ii;
     int j;
     int psIndex;
     int psIndexOld;
     seg_t *polySegList[PO_MAXPOLYSEGS];
 
-    for (i = 0; i < numsegs; i++)
+    for (ii = 0; ii < KnownPolySidesCount; ii++)
     {
+        i = KnownPolySides[ii];
         if (segs[i].linedef &&
             segs[i].linedef->special == PO_LINE_START &&
             segs[i].linedef->special_args[0] == tag)
@@ -1263,8 +1267,9 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
         for (j = 1; j < PO_MAXPOLYSEGS; j++)
         {
             psIndexOld = psIndex;
-            for (i = 0; i < numsegs; i++)
+            for (ii = 0; ii < KnownPolySidesCount; ii++)
             {
+                i = KnownPolySides[ii];
                 if (segs[i].linedef &&
                     segs[i].linedef->special == PO_LINE_EXPLICIT &&
                     segs[i].linedef->special_args[0] == tag)
@@ -1291,8 +1296,9 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
             // Clear out any specials for these segs...we cannot clear them out
             //      in the above loop, since we aren't guaranteed one seg per
             //              linedef.
-            for (i = 0; i < numsegs; i++)
+            for (ii = 0; ii < KnownPolySidesCount; ii++)
             {
+                i = KnownPolySides[ii];
                 if (segs[i].linedef &&
                     segs[i].linedef->special == PO_LINE_EXPLICIT &&
                     segs[i].linedef->special_args[0] == tag
@@ -1306,8 +1312,9 @@ static void SpawnPolyobj(int index, int tag, dboolean crush, dboolean hurt)
             {                   // Check if an explicit line order has been skipped
                 // A line has been skipped if there are any more explicit
                 // lines with the current tag value
-                for (i = 0; i < numsegs; i++)
+                for (ii = 0; ii < KnownPolySidesCount; ii++)
                 {
+                    i = KnownPolySides[ii];
                     if (segs[i].linedef &&
                         segs[i].linedef->special == PO_LINE_EXPLICIT &&
                         segs[i].linedef->special_args[0] == tag)
@@ -1538,6 +1545,36 @@ void PO_LoadUDMFThings(int lump)
     }
 }
 
+static void FreeSideLists()
+{
+    free(KnownPolySides);
+    KnownPolySides = NULL;
+    KnownPolySidesCount = 0;
+}
+
+//==========================================================================
+//
+// InitSideLists [RH]
+//
+// Group sides by vertex and collect side that are known to belong to a
+// polyobject so that they can be initialized fast.
+//==========================================================================
+static void InitSideLists()
+{
+    int i;
+    FreeSideLists();
+    KnownPolySides = malloc(numsegs * sizeof(KnownPolySides[0]));
+    for (i = 0; i < numsegs; i++)
+    {
+        if (segs[i].linedef &&
+            (segs[i].linedef->special == PO_LINE_START ||
+             segs[i].linedef->special == PO_LINE_EXPLICIT))
+        {
+            KnownPolySides[KnownPolySidesCount++] = i;
+        }
+    }
+}
+
 void PO_Init(int lump)
 {
     int i;
@@ -1545,7 +1582,13 @@ void PO_Init(int lump)
     polyobjs = Z_MallocLevel(po_NumPolyobjs * sizeof(polyobj_t));
     memset(polyobjs, 0, po_NumPolyobjs * sizeof(polyobj_t));
 
+    // [RH] Make this faster
+    InitSideLists();
+
     map_loader.po_load_things(lump);
+
+    // [RH] Don't need the side lists anymore
+    FreeSideLists();
 
     // check for a startspot without an anchor point
     for (i = 0; i < po_NumPolyobjs; i++)
